@@ -1,0 +1,24 @@
+{
+    "name": "OpenClawUnityPlugin.Editor",
+    "rootNamespace": "OpenClaw.UnityPlugin",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.nuget.newtonsoft-json",
+            "expression": "",
+            "define": "NEWTONSOFT_JSON"
+        }
+    ],
+    "noEngineReferences": false
+}
