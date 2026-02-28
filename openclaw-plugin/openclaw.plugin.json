@@ -1,0 +1,32 @@
+{
+  "id": "unity-editor",
+  "name": "Unity Editor Integration",
+  "version": "1.0.0",
+  "description": "Connect OpenClaw AI Agent to Unity Editor — scene operations, script writing, compile feedback loop, project indexing",
+  "skills": ["skills/unity-editor"],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "port": {
+        "type": "number",
+        "default": 23456,
+        "description": "HTTP port where the Unity Editor Plugin is running"
+      },
+      "wsPort": {
+        "type": "number",
+        "default": 23457,
+        "description": "WebSocket port (HTTP port + 1 by default)"
+      },
+      "timeout": {
+        "type": "number",
+        "default": 15000,
+        "description": "HTTP request timeout in milliseconds"
+      }
+    }
+  },
+  "uiHints": {
+    "port":    { "label": "Unity HTTP Port",   "placeholder": "23456" },
+    "wsPort":  { "label": "Unity WS Port",     "placeholder": "23457" },
+    "timeout": { "label": "Timeout (ms)",      "placeholder": "15000" }
+  }
+}
