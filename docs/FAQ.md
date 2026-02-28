@@ -167,11 +167,11 @@ execute: async (params) => {
 **解决**: 查阅 OpenClaw Plugin SDK 的类型声明安装方式。若 SDK 尚无完整类型声明，临时使用：
 ```typescript
 // 临时类型声明，后续替换为官方类型
-declare const api: {
-  registerTool: (def: { name: string; description: string; parameters: object; execute: (params: any) => Promise<string> }) => void;
-  getConfig: () => Record<string, any>;
-};
+// TODO: replace with SDK types
+type OpenClawPluginAPI = any;
 ```
+
+> 注意：API 对象上没有 `getConfig()` 方法，读取插件配置应使用 `api.pluginConfig`，见 Q24。
 
 ---
 
@@ -206,7 +206,7 @@ declare const api: {
 
 **说明**: 本项目 Unity Server 使用纯 HTTP（非 HTTPS），因为仅监听 localhost，无需 TLS。若出现 HTTPS 相关错误，通常是 Plugin 侧错误地使用了 `https://` 前缀。
 
-**解决**: 确认 `unity-client.ts` 中 base URL 为 `http://localhost:{port}`。
+**解决**: 确认 `unity-client.ts` 中 base URL 为 `http://127.0.0.1:{port}`（注意必须用 `127.0.0.1` 而不是 `localhost`，见 Q25）。
 
 ---
 
@@ -284,6 +284,168 @@ declare const api: {
 **症状**: OpenClaw 启动时报 `SyntaxError` 或 `Cannot find module`。
 
 **解决**: 确认 Node.js >= 18（需要原生 `fetch` 支持）。使用 `node --version` 检查；推荐用 `nvm` 管理版本。
+
+---
+
+---
+
+### Q21: `.asmdef` 中 `"GUID:..."` 占位符导致编译失败
+
+**症状**: Unity 打开项目后报 `Assembly Definition File: Could not find referenced assembly definition with GUID`。
+
+**原因**: `OpenClawUnityPlugin.Editor.asmdef` 的 `references` 字段包含了无效占位符 `"GUID:..."`，Unity 无法解析。
+
+**解决**: 将 `references` 改为空数组，通过 `precompiledReferences` 引用 DLL：
+```json
+{
+  "references": [],
+  "precompiledReferences": ["Newtonsoft.Json.dll"]
+}
+```
+
+---
+
+## 集成测试（实测问题）
+
+### Q22: Unity 编译报 `The name 'Application' does not exist in the current context`
+
+**症状**: 首次将插件复制到 Unity 项目并编译时，`StatusHandler.cs` 报错。
+
+**原因**: `StatusHandler.cs` 缺少 `using UnityEngine;`，而 `Application` 类属于 `UnityEngine` 命名空间。
+
+**解决**: 在文件头部加入：
+```csharp
+using UnityEngine;
+```
+
+**影响文件**: `Handlers/StatusHandler.cs`（已修复）。其余 Handler 中不使用 `Application` 类，无需变更。
+
+---
+
+### Q23: `openclaw plugins install` 报 `package.json missing openclaw.extensions`
+
+**症状**: 执行 `openclaw plugins install --link ./openclaw-plugin` 时报错退出。
+
+**原因**: OpenClaw 要求 `package.json` 中包含 `"openclaw": {"extensions": [...]}` 字段，指向插件入口文件。
+
+**解决**: 在 `package.json` 中添加：
+```json
+{
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  }
+}
+```
+
+---
+
+### Q24: Plugin 加载报 `TypeError: api.getConfig is not a function`
+
+**症状**: `openclaw plugins install` 成功后，OpenClaw 日志显示 `unity-editor failed during register ... TypeError: api.getConfig is not a function`。
+
+**原因**: OpenClaw Plugin API 对象没有 `getConfig()` 方法，插件配置通过属性 `api.pluginConfig` 读取。
+
+**解决**:
+```typescript
+// ❌ 错误
+const config = api.getConfig();
+
+// ✅ 正确
+const config = api.pluginConfig ?? {};
+const port = config.port ?? 23456;
+```
+
+---
+
+### Q25: `curl http://localhost:23456/...` 返回 `Bad Request (Invalid host)`
+
+**症状**: Unity HTTP Server 已启动（端口可见），但用 `localhost` 访问返回 400。
+
+**原因**: Mono 的 `HttpListener` 注册前缀为 `http://127.0.0.1:{port}/`，不匹配 `Host: localhost` 请求头，直接返回 400。
+
+**解决**: 始终使用 `127.0.0.1` 而非 `localhost`：
+```bash
+# ❌
+curl http://localhost:23456/api/v1/status
+
+# ✅
+curl http://127.0.0.1:23456/api/v1/status
+```
+TypeScript 客户端（`unity-client.ts`、`unity-ws-client.ts`）已统一使用 `127.0.0.1`，无需改动。
+
+---
+
+### Q26: `/api/v1/status` 中 `unityVersion` 返回的是项目版本号而非引擎版本
+
+**症状**: `status` 接口返回 `"unityVersion": "0.1.0"`（项目自定义版本），而非预期的 `"6000.0.46f1"`。
+
+**原因**: 代码误用了 `Application.version`（项目版本，在 Player Settings 中设置），应改为 `Application.unityVersion`（Unity 引擎版本）。
+
+**解决**:
+```csharp
+// ❌
+unityVersion = Application.version,
+
+// ✅
+unityVersion = Application.unityVersion,
+```
+
+---
+
+---
+
+### Q27: `wscat -c ws://127.0.0.1:23457/ws` 报 `Unexpected server response: 400`
+
+**症状**: WebSocket 连接建立失败，wscat 打印 400 错误。
+
+**原因**: Mono 的 `HttpListener` 前缀匹配时，`/ws/`（有尾斜杠）**不匹配**路径 `/ws`（无尾斜杠）。客户端连接 `/ws` 时找不到前缀，Mono 直接返回 400。
+
+**解决**: 将 `BuiltinWebSocketServer` 中的监听前缀从 `/ws/` 改为 `/`，让该端口上的所有请求都进入 AcceptLoop，由 `IsWebSocketRequest` 判断是否为合法 WS 升级：
+
+```csharp
+// ❌
+_wsListener.Prefixes.Add($"http://127.0.0.1:{wsPort}/ws/");
+
+// ✅
+_wsListener.Prefixes.Add($"http://127.0.0.1:{wsPort}/");
+```
+
+---
+
+---
+
+### Q28: `curl -X POST` 返回 `411 Length Required`
+
+**症状**: POST 接口用 curl 测试时，Mono 返回 411，响应体为 `<h1>Length Required</h1>`。
+
+**原因**: Mono 的 HttpListener 对所有 POST 请求强制要求 `Content-Length` 头，而 curl 默认发送无 body 的 POST 时不带该头。
+
+**解决**: 测试时统一用 `-H "Content-Type: application/json" -d '{}'` 显式传空 body：
+```bash
+# ❌
+curl -X POST http://127.0.0.1:23456/api/v1/editor/compile
+
+# ✅
+curl -s -X POST -H "Content-Type: application/json" -d '{}' \
+  http://127.0.0.1:23456/api/v1/editor/compile | python3 -m json.tool
+```
+
+**注意**: TypeScript 客户端通过 `fetch` 发请求时自动包含 `Content-Length`，生产环境不受影响，只有手动 curl 测试时需要注意。
+
+---
+
+### Q29: `Assets → Refresh` 触发后 wscat 没有收到编译事件
+
+**症状**: WebSocket 已连接，在 Unity 中执行 `Assets → Refresh` 后终端无任何输出。
+
+**原因**: `AssetDatabase.Refresh()` 仅重新导入资产（贴图、模型、音频等），**不会触发脚本重新编译**。`CompilationPipeline` 的事件（`compilationStarted` / `compilationFinished`）只在脚本文件真正发生变化时才触发。
+
+**解决**: 用 `/api/v1/editor/compile` 接口触发强制重编（内部调用 `CompilationPipeline.RequestScriptCompilation()`）：
+```bash
+curl -s -X POST -H "Content-Type: application/json" -d '{}' \
+  http://127.0.0.1:23456/api/v1/editor/compile | python3 -m json.tool
+```
+或直接修改任意一个 `.cs` 文件并保存，Unity 会自动检测并重编。
 
 ---
 

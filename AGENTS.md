@@ -122,10 +122,10 @@ execute: async (params) => {
 
 ## 当前开发阶段
 
-**阶段一（文档）已完成，尚未开始编码。**
+**阶段二（Unity C# Plugin + OpenClaw Plugin 主体）已完成，待集成测试。**
 
 进度详情：`docs/开发进度.md`
-下一步：Unity C# Plugin 核心框架（`HttpServer`、`IWebSocketServer`、`EventBroadcaster`、`CompilationListener`、`MainThreadDispatcher`、`RequestRouter`）
+下一步：将 `unity-plugin/` 导入真实 Unity 工程，运行集成测试（HTTP 连通 → WebSocket 事件 → 代码自修正循环）
 
 ---
 
