@@ -14,15 +14,16 @@ function registerCompileTools(api, client, ws) {
                     type: "number",
                     description: "Max seconds to wait for compilation result (default: 60)"
                 }
-            }
+            },
+            required: []
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
                 // 触发编译
                 await client.post("/editor/compile");
                 // 等待 WebSocket 编译结果事件
-                const timeoutMs = (params.timeoutSeconds ?? 60) * 1000;
+                const timeoutMs = (params?.timeoutSeconds ?? 60) * 1000;
                 const result = await Promise.race([
                     ws.waitForEvent("compile_complete", timeoutMs),
                     ws.waitForEvent("compile_failed", timeoutMs),
@@ -34,9 +35,9 @@ function registerCompileTools(api, client, ws) {
                         return (0, error_1.unityError)(errRes);
                     // TODO: replace with SDK types
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    return `Compilation FAILED:\n${(0, format_1.formatCompileErrors)(errRes.data.errors)}`;
+                    return (0, format_1.textResult)(`Compilation FAILED:\n${(0, format_1.formatCompileErrors)(errRes.data.errors)}`);
                 }
-                return "Compilation succeeded.";
+                return (0, format_1.textResult)("Compilation succeeded.");
             }
             catch (err) {
                 return (0, error_1.handleError)(err);
@@ -50,18 +51,19 @@ function registerCompileTools(api, client, ws) {
             type: "object",
             properties: {
                 type: { type: "string", description: "Filter by type: 'error' or 'warning' (default: all)" }
-            }
+            },
+            required: []
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
-                const res = await client.get("/compile/errors", { type: params.type ?? "" });
+                const res = await client.get("/compile/errors", { type: params?.type ?? "" });
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
                 // TODO: replace with SDK types
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const formatted = (0, format_1.formatCompileErrors)(res.data.errors);
-                return `Compile status: ${res.data.status}\n${formatted}`;
+                return (0, format_1.textResult)(`Compile status: ${res.data.status}\n${formatted}`);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);
@@ -76,17 +78,18 @@ function registerCompileTools(api, client, ws) {
             properties: {
                 type: { type: "string", description: "'log' | 'warning' | 'error' (default: all)" },
                 limit: { type: "number", description: "Max entries to return (default: 50)" }
-            }
+            },
+            required: []
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
-                const res = await client.get("/console/logs", { type: params.type ?? "", limit: params.limit ?? 50 });
+                const res = await client.get("/console/logs", { type: params?.type ?? "", limit: params?.limit ?? 50 });
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
                 if (!res.data.logs.length)
-                    return "Console is empty.";
-                return res.data.logs.map(l => `[${l.type.toUpperCase()}] ${l.message}`).join("\n");
+                    return (0, format_1.textResult)("Console is empty.");
+                return (0, format_1.textResult)(res.data.logs.map(l => `[${l.type.toUpperCase()}] ${l.message}`).join("\n"));
             }
             catch (err) {
                 return (0, error_1.handleError)(err);

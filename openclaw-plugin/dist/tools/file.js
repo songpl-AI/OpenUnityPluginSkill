@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerFileTools = registerFileTools;
+const format_1 = require("../utils/format");
 const error_1 = require("../utils/error");
 function registerFileTools(api, client) {
     api.registerTool({
@@ -13,13 +14,13 @@ function registerFileTools(api, client) {
             },
             required: ["path"]
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
                 const res = await client.get("/file/read", { path: params.path });
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
-                return `File: ${res.data.path}\n\`\`\`csharp\n${res.data.content}\n\`\`\``;
+                return (0, format_1.textResult)(`File: ${res.data.path}\n\`\`\`csharp\n${res.data.content}\n\`\`\``);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);
@@ -37,7 +38,7 @@ function registerFileTools(api, client) {
             },
             required: ["path", "content"]
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
                 const res = await client.post("/file/write", {
@@ -46,7 +47,7 @@ function registerFileTools(api, client) {
                 });
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
-                return `Written ${res.data.written} chars to ${res.data.path}. AssetDatabase refresh triggered.`;
+                return (0, format_1.textResult)(`Written ${res.data.written} chars to ${res.data.path}. AssetDatabase refresh triggered.`);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);

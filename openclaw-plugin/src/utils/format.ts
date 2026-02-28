@@ -1,5 +1,19 @@
 // 将 Unity API 返回的结构化数据格式化为 Agent 可读的文本
 
+/**
+ * OpenClaw 框架要求 execute 返回 AgentToolResult 格式：
+ *   { content: [{ type: "text", text: "..." }], details: unknown }
+ * 使用 textResult 将任意字符串包装成正确格式。
+ */
+export type ToolResult = {
+  content: Array<{ type: "text"; text: string }>;
+  details: unknown;
+};
+
+export function textResult(text: string, details: unknown = {}): ToolResult {
+  return { content: [{ type: "text", text }], details };
+}
+
 export function formatHierarchy(roots: GameObjectNode[], indent = 0): string {
   return roots.map(go => {
     const prefix = "  ".repeat(indent) + (indent === 0 ? "" : "└─ ");

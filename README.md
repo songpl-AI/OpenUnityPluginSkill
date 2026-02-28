@@ -147,6 +147,7 @@ Agent 应调用 `unity_get_hierarchy` 并返回场景树。
 
 | 工具 | 功能 |
 |------|------|
+| `unity_check_status` | 检查 Unity Editor 是否运行、插件是否活跃 |
 | `unity_get_scene_info` | 当前场景名称、路径、是否有未保存改动 |
 | `unity_get_hierarchy` | 完整 GameObject 树 |
 | `unity_save_scene` | 保存场景 |

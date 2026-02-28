@@ -1,4 +1,5 @@
 import { UnityClient } from "../unity-client";
+import { textResult, ToolResult } from "../utils/format";
 import { handleError, unityError } from "../utils/error";
 
 // TODO: replace with SDK types
@@ -17,12 +18,12 @@ export function registerFileTools(api: API, client: UnityClient): void {
       },
       required: ["path"]
     },
-    execute: async (params: { path: string }) => {
+    execute: async (_toolCallId: string, params: { path: string }): Promise<ToolResult> => {
       try {
         await client.ensureConnected();
         const res = await client.get<{ path: string; content: string }>("/file/read", { path: params.path });
         if (!res.ok) return unityError(res);
-        return `File: ${res.data.path}\n\`\`\`csharp\n${res.data.content}\n\`\`\``;
+        return textResult(`File: ${res.data.path}\n\`\`\`csharp\n${res.data.content}\n\`\`\``);
       } catch (err) { return handleError(err); }
     }
   });
@@ -38,7 +39,7 @@ export function registerFileTools(api: API, client: UnityClient): void {
       },
       required: ["path", "content"]
     },
-    execute: async (params: { path: string; content: string }) => {
+    execute: async (_toolCallId: string, params: { path: string; content: string }): Promise<ToolResult> => {
       try {
         await client.ensureConnected();
         const res = await client.post<{ path: string; written: number }>("/file/write", {
@@ -46,7 +47,7 @@ export function registerFileTools(api: API, client: UnityClient): void {
           content: params.content
         });
         if (!res.ok) return unityError(res);
-        return `Written ${res.data.written} chars to ${res.data.path}. AssetDatabase refresh triggered.`;
+        return textResult(`Written ${res.data.written} chars to ${res.data.path}. AssetDatabase refresh triggered.`);
       } catch (err) { return handleError(err); }
     }
   });

@@ -1,10 +1,14 @@
 "use strict";
 // 将 Unity API 返回的结构化数据格式化为 Agent 可读的文本
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.textResult = textResult;
 exports.formatHierarchy = formatHierarchy;
 exports.formatAssetList = formatAssetList;
 exports.formatCompileErrors = formatCompileErrors;
 exports.formatScriptTypes = formatScriptTypes;
+function textResult(text, details = {}) {
+    return { content: [{ type: "text", text }], details };
+}
 function formatHierarchy(roots, indent = 0) {
     return roots.map(go => {
         const prefix = "  ".repeat(indent) + (indent === 0 ? "" : "└─ ");

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerGameObjectTools = registerGameObjectTools;
+const format_1 = require("../utils/format");
 const error_1 = require("../utils/error");
 function registerGameObjectTools(api, client) {
     api.registerTool({
@@ -16,13 +17,13 @@ function registerGameObjectTools(api, client) {
             },
             required: ["name"]
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
                 const res = await client.post("/gameobject/create", params);
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
-                return `Created GameObject '${res.data.name}' at path: ${res.data.path}`;
+                return (0, format_1.textResult)(`Created GameObject '${res.data.name}' at path: ${res.data.path}`);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);
@@ -39,13 +40,13 @@ function registerGameObjectTools(api, client) {
             },
             required: ["path"]
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
                 const res = await client.post("/gameobject/delete", params);
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
-                return `Deleted GameObject: ${params.path}`;
+                return (0, format_1.textResult)(`Deleted GameObject: ${params.path}`);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);
@@ -65,13 +66,13 @@ function registerGameObjectTools(api, client) {
             },
             required: ["path"]
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
                 const res = await client.post("/gameobject/transform", params);
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
-                return `Transform updated for: ${params.path}`;
+                return (0, format_1.textResult)(`Transform updated for: ${params.path}`);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);
@@ -86,17 +87,18 @@ function registerGameObjectTools(api, client) {
             properties: {
                 name: { type: "string", description: "Partial name to search for" },
                 tag: { type: "string", description: "Exact tag to filter by" }
-            }
+            },
+            required: []
         },
-        execute: async (params) => {
+        execute: async (_toolCallId, params) => {
             try {
                 await client.ensureConnected();
-                const res = await client.get("/gameobject", { name: params.name ?? "", tag: params.tag ?? "" });
+                const res = await client.get("/gameobject", { name: params?.name ?? "", tag: params?.tag ?? "" });
                 if (!res.ok)
                     return (0, error_1.unityError)(res);
                 if (!res.data.count)
-                    return "No GameObjects found matching criteria.";
-                return res.data.objects.map(o => `• ${o.path} (tag: ${o.tag}, active: ${o.active})`).join("\n");
+                    return (0, format_1.textResult)("No GameObjects found matching criteria.");
+                return (0, format_1.textResult)(res.data.objects.map(o => `• ${o.path} (tag: ${o.tag}, active: ${o.active})`).join("\n"));
             }
             catch (err) {
                 return (0, error_1.handleError)(err);

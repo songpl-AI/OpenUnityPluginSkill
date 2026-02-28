@@ -27,6 +27,7 @@ Before using any tool, always call `unity_check_status` first if you're unsure w
 
 | Tool | Purpose |
 |------|---------|
+| `unity_check_status` | Check if Unity Editor is running and plugin is active |
 | `unity_get_scene_info` | Current scene name, path, dirty state |
 | `unity_get_hierarchy` | Full GameObject tree |
 | `unity_save_scene` | Save current scene |

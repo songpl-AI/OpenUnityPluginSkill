@@ -307,6 +307,8 @@ type OpenClawPluginAPI = any;
 
 ## 集成测试（实测问题）
 
+> Q30–Q31 记录 OpenClaw Plugin TS 侧 API 格式问题（见文档末尾）。
+
 ### Q22: Unity 编译报 `The name 'Application' does not exist in the current context`
 
 **症状**: 首次将插件复制到 Unity 项目并编译时，`StatusHandler.cs` 报错。
@@ -446,6 +448,76 @@ curl -s -X POST -H "Content-Type: application/json" -d '{}' \
   http://127.0.0.1:23456/api/v1/editor/compile | python3 -m json.tool
 ```
 或直接修改任意一个 `.cs` 文件并保存，Unity 会自动检测并重编。
+
+---
+
+### Q30: `parameters.required` 缺失导致框架内部报错崩溃
+
+**症状**: Agent 刚收到消息就报 `Cannot read properties of undefined (reading 'filter')`（与 Q31 同症状但原因层不同）。
+
+**原因**: OpenClaw 框架在处理工具的 JSON Schema 时，可能对 `parameters.required` 进行迭代操作。当工具定义中 `parameters` 对象里没有 `required` 字段（值为 `undefined`）时，部分框架路径触发崩溃。
+
+**解决**: 所有没有必填参数的工具，显式声明空数组 `required: []`：
+
+```typescript
+parameters: {
+  type: "object",
+  properties: {
+    depth: { type: "number", description: "Max depth" }
+  },
+  required: []  // ← 必须显式声明，不能省略
+},
+```
+
+---
+
+### Q31: `execute` 函数签名和返回格式不符框架 AgentTool 接口，导致 `Cannot read properties of undefined (reading 'filter')`
+
+**症状**: Agent 调用工具后，OpenClaw embedded agent 立即报 `Cannot read properties of undefined (reading 'filter')` 并中止运行。
+
+**根本原因**: `AgentTool` 接口（来自 `@mariozechner/pi-agent-core`）要求：
+
+```typescript
+// 框架要求的签名
+execute: (toolCallId: string, params: TParams, signal?: AbortSignal, onUpdate?) => Promise<AgentToolResult<T>>
+
+// AgentToolResult 格式
+{ content: Array<{ type: "text"; text: string }>, details: unknown }
+```
+
+原代码错误写法：
+```typescript
+// ❌ 参数顺序错误：toolCallId 被绑定到 params 变量
+execute: async (params: { path: string }) => {
+  return "Success";  // ❌ 返回字符串而非 AgentToolResult
+}
+```
+
+当框架调用 `tool.execute(toolCallId, params, ...)` 时：
+1. `toolCallId`（字符串）被绑定为第一个参数 `params`，实际 params 被丢弃
+2. 工具返回一个普通字符串 `"Success"`
+3. 框架对返回值执行 `result.content.filter(...)` 以提取文本
+4. `"Success".content` 为 `undefined`，`undefined.filter(...)` 即崩溃
+
+**解决**: 修正签名并使用 `textResult()` 辅助函数：
+
+```typescript
+import { textResult, ToolResult } from "../utils/format";
+
+// ✅ 正确
+execute: async (_toolCallId: string, params: { path: string }): Promise<ToolResult> => {
+  try {
+    await client.ensureConnected();
+    const res = await client.get<{ ... }>("/some/endpoint", params);
+    if (!res.ok) return unityError(res);
+    return textResult(`Result: ${res.data.someField}`);
+  } catch (err) { return handleError(err); }
+}
+```
+
+`textResult(text)` 将字符串包装为 `{ content: [{ type: "text", text }], details: {} }`。
+
+**影响范围**: 所有工具文件（scene.ts / gameobject.ts / file.ts / compile.ts / project.ts）及 utils/error.ts。
 
 ---
 
