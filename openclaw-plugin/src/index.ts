@@ -1,28 +1,16 @@
-import { UnityClient } from "./unity-client";
-import { registerSceneTools }      from "./tools/scene";
-import { registerGameObjectTools } from "./tools/gameobject";
-import { registerFileTools }       from "./tools/file";
-import { registerCompileTools }    from "./tools/compile";
-import { registerProjectTools }    from "./tools/project";
+// OpenClaw Unity Editor Plugin
+//
+// This plugin registers the unity-editor skill with OpenClaw.
+// It does NOT register any direct Unity tools — all Unity operations are
+// performed exclusively by Claude Code via MCP Server (see mcp-server/).
+//
+// For installation and usage, see:
+//   skills/unity-editor/SKILL.md
+//   docs/路径二-ClaudeCode委派模式.md
 
-// TODO: replace with SDK types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type OpenClawPluginAPI = any;
-
-// Only read-only tools are registered here.
-// All write operations (create GO, write file, compile, add component, etc.)
-// are performed exclusively by Claude Code via MCP Server (mcp-server/).
-export default function register(api: OpenClawPluginAPI): void {
-  const config = (api.pluginConfig ?? {}) as { port?: number; timeout?: number };
-
-  const port    = config.port    ?? 23456;
-  const timeout = config.timeout ?? 15000;
-
-  const client = new UnityClient({ port, timeout });
-
-  registerSceneTools(api, client);
-  registerGameObjectTools(api, client);
-  registerFileTools(api, client);
-  registerCompileTools(api, client);
-  registerProjectTools(api, client);
+export default function register(_api: any): void {
+  // No tools registered here.
+  // The skill instructions in skills/unity-editor/SKILL.md tell OpenClaw
+  // to delegate all Unity tasks to Claude Code via exec.
 }

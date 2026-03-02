@@ -13,6 +13,9 @@ namespace OpenClaw.UnityPlugin
     {
         private readonly List<RouteEntry> _routes = new List<RouteEntry>();
 
+        /// <summary>已注册的路由数量</summary>
+        public int RouteCount => _routes.Count;
+
         /// <summary>注册一条路由规则</summary>
         public void Register(string method, string pattern, Action<HttpContext> handler)
         {
@@ -50,6 +53,7 @@ namespace OpenClaw.UnityPlugin
         private class RouteEntry
         {
             public string                   Method  { get; }
+            public string                   Pattern { get; }
             public Action<HttpContext>       Handler { get; }
 
             private readonly Regex   _regex;
@@ -58,13 +62,19 @@ namespace OpenClaw.UnityPlugin
             public RouteEntry(string method, string pattern, Action<HttpContext> handler)
             {
                 Method  = method;
+                Pattern = pattern;
                 Handler = handler;
 
                 // 将 :param 转为命名捕获组，其余字符转义
                 var paramNames = new List<string>();
-                var regexStr   = "^" + Regex.Replace(
-                    Regex.Escape(pattern).Replace("/", "\\/"),
-                    @"\\:(\w+)",
+
+                // 先转义特殊字符，Regex.Escape 会把 : 转义成 \:
+                var escaped = Regex.Escape(pattern);
+
+                // 然后将 \:param 替换为命名捕获组
+                var regexStr = "^" + Regex.Replace(
+                    escaped,
+                    @"\\:(\w+)",  // 匹配被转义的 \:param
                     m => { paramNames.Add(m.Groups[1].Value); return $"(?<{m.Groups[1].Value}>[^/]+)"; }
                 ) + "$";
 

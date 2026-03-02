@@ -141,6 +141,8 @@ namespace OpenClaw.UnityPlugin
             router.Register("GET",  "/api/v1/build/settings", buildHandler.HandleSettings);
             router.Register("POST", "/api/v1/build/run",      buildHandler.HandleRun);
             router.Register("GET",  "/api/v1/build/status",   buildHandler.HandleStatus);
+
+            Debug.Log($"[OpenClaw] Registered {router.RouteCount} routes.");
         }
     }
 }

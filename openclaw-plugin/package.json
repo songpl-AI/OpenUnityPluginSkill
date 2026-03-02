@@ -12,11 +12,8 @@
   },
   "keywords": ["openclaw", "unity", "editor", "plugin"],
   "license": "MIT",
-  "dependencies": {
-    "ws": "^8.18.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/ws": "^8.5.13",
     "typescript": "^5.7.0"
   }
 }
