@@ -154,6 +154,13 @@ namespace OpenClaw.UnityPlugin
             router.Register("GET", "/api/v1/project/input-system",     settingsHandler.HandleGetInputSystem);
             router.Register("GET", "/api/v1/project/player-settings",  settingsHandler.HandleGetPlayerSettings);
 
+            // Material
+            var materialHandler = new MaterialHandler();
+            router.Register("GET",  "/api/v1/material/render-pipeline", materialHandler.HandleGetRenderPipeline);
+            router.Register("GET",  "/api/v1/material/properties",      materialHandler.HandleGetProperties);
+            router.Register("POST", "/api/v1/material/properties",      materialHandler.HandleSetProperties);
+            router.Register("POST", "/api/v1/material/assign",          materialHandler.HandleAssign);
+
             // Package Manager
             var packageHandler = new PackageHandler();
             router.Register("GET",  "/api/v1/package/list",   packageHandler.HandleList);
