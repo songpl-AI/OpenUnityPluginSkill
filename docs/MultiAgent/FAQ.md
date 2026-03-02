@@ -1,6 +1,6 @@
 # FAQ：OpenClaw + Claude Code + Unity MCP 多 Agent 系统
 
-**版本**: 1.0.0
+**版本**: 1.1.0
 **日期**: 2026-03-02
 
 ---
@@ -39,13 +39,36 @@ stdio 的优势是**无需长驻进程**，Claude Code 在调用时按需启动 
 
 **Q：`--output-format json` 的输出结构是什么？**
 
-架构文档中假设包含 `session_id` 和 `result` 字段，但**需要实测确认**。运行以下命令查看：
+已确认字段（Claude Code v2.1.61，实测）：
 
-```bash
-claude -p "说一句你好" --output-format json --max-turns 1
+```json
+{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "session_id": "fac8c5bf-7108-49f1-b1dc-a6bf6e5c9336",
+  "result": "Claude 的文字回复内容",
+  "num_turns": 2,
+  "duration_ms": 12732,
+  "duration_api_ms": 12313,
+  "total_cost_usd": 0.0999,
+  "stop_reason": null,
+  "usage": { "input_tokens": 16, "cache_creation_input_tokens": 23136, "cache_read_input_tokens": 22902, "output_tokens": 415, "..." },
+  "permission_denials": []
+}
 ```
 
-记录实际字段名，更新 SKILL.md 中的解析说明。
+关键字段：
+- `result`：Claude 的文字输出（OpenClaw 解析此字段）
+- `session_id`：会话 ID，传给下一个子任务的 `--resume`
+- `is_error`：`true` 表示工具调用失败或超出轮次
+- `subtype`：`"success"` / `"error_max_turns"` / `"error_during_execution"` 等
+- `total_cost_usd`：本次调用的 API 费用
+- `num_turns`：实际使用的轮次数
+
+> **注1**：`subtype: "error_max_turns"` 表示到达 `--max-turns` 上限但任务未完成，此时 OpenClaw 应将任务拆更小后重新派发。
+>
+> **注2**：首次调用时 `cache_creation_input_tokens` 较大（~23K tokens），会产生较高费用（约 $0.10）。后续调用会命中 cache（`cache_read_input_tokens`），费用大幅降低。
 
 ---
 
@@ -81,17 +104,25 @@ Domain Reload 会断开 WebSocket 连接，此时 `ws.waitForEvent` 会超时（
 
 **Q：`--allowedTools "mcp__unity-editor__*"` 的通配符是否被支持？**
 
-`mcp__<server-name>__<tool-name>` 是 Claude Code 中 MCP 工具的命名格式，`*` 通配符**需要实测确认**是否支持。如果不支持，需要逐一列出工具名：
+`mcp__<server-name>__<tool-name>` 是 Claude Code 中 MCP 工具的命名格式，`*` 通配符**需要实测确认**是否支持。如果不支持，使用以下完整列表（共 19 个工具）：
 
 ```bash
---allowedTools "mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_hierarchy,..."
+--allowedTools "mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_scene_info,mcp__unity-editor__unity_get_hierarchy,mcp__unity-editor__unity_save_scene,mcp__unity-editor__unity_create_gameobject,mcp__unity-editor__unity_delete_gameobject,mcp__unity-editor__unity_set_transform,mcp__unity-editor__unity_find_gameobjects,mcp__unity-editor__unity_get_components,mcp__unity-editor__unity_add_component,mcp__unity-editor__unity_set_component_property,mcp__unity-editor__unity_read_file,mcp__unity-editor__unity_write_file,mcp__unity-editor__unity_compile,mcp__unity-editor__unity_get_compile_errors,mcp__unity-editor__unity_get_console_logs,mcp__unity-editor__unity_get_project_info,mcp__unity-editor__unity_get_scripts,mcp__unity-editor__unity_find_assets"
 ```
 
 ---
 
 **Q：`--max-budget-usd` 参数是否可用？**
 
-架构调研时列入的参数，但**未经实测验证**。如果 Claude Code CLI 不支持此参数会报错。建议先不使用，以 `--max-turns 30` 作为主要保护手段。
+**已确认可用**（Claude Code v2.1.61）。`--max-budget-usd <amount>` 限制单次任务的 API 费用上限，与 `--max-turns` 配合使用效果更好：
+
+```bash
+claude -p "..." \
+  --max-turns 30 \
+  --max-budget-usd 0.50   # 单次任务最多消耗 $0.50
+```
+
+建议在生产环境中两者都加，双重防护。
 
 ---
 
@@ -103,12 +134,60 @@ Domain Reload 会断开 WebSocket 连接，此时 `ws.waitForEvent` 会超时（
 
 ## 使用与调试类
 
+**Q：导入插件后 Unity 报 `Newtonsoft.Json` 相关编译错误怎么办？**
+
+插件依赖 `com.unity.nuget.newtonsoft-json` 包。导入后，`DependencyInstaller.cs`（在独立的 `OpenClawUnityPlugin.Setup` Assembly 中）会在下一帧自动调用 `PackageManager.Client.Add()` 安装该包，并在 Console 打印进度。
+
+- **等待 Console 出现** `[OpenClaw Unity Plugin] ✅ '...newtonsoft-json' installed successfully.`，随后 Unity 自动重新编译，错误消失。
+- **如果自动安装失败**（网络不通或权限问题）：Console 会打印错误并附带手动安装步骤：`Window → Package Manager → '+' → Add package by name → com.unity.nuget.newtonsoft-json`
+
+> **设计要点**：`DependencyInstaller.cs` 所在的 `OpenClawUnityPlugin.Setup` Assembly 不引用任何 Newtonsoft.Json 类型，因此即使主 Assembly 因缺少该包而编译失败，Setup Assembly 仍然能正常运行并完成安装。
+
+---
+
 **Q：运行 `install.sh` 后，`claude -p ... --mcp-config` 报找不到 MCP Server 怎么办？**
 
 检查以下几点：
 1. `~/.claude/unity-mcp-config.json` 中的 `args` 路径是否正确（指向 `dist/index.js`）
 2. `mcp-server/dist/index.js` 是否存在（执行 `npm run build`）
 3. `node` 是否在 PATH 中（`command -v node`）
+
+---
+
+**Q：`curl http://localhost:23456/api/v1/status` 返回 `400 Bad Request (Invalid host)`，但 `127.0.0.1` 正常？**
+
+这是 .NET `HttpListener` 的 **Host 头校验机制**导致的。`HttpListener` 会校验每个 HTTP 请求的 `Host` 头是否与注册的 Prefix 完全匹配。
+
+原因链路：
+1. `HttpServer.cs` 注册的 Prefix 是 `http://127.0.0.1:23456/`
+2. 用 `localhost` 访问时，curl 发送的请求头是 `Host: localhost:23456`
+3. `localhost ≠ 127.0.0.1` → `HttpListener` 直接返回 `400 Bad Request (Invalid host)`
+4. 注意这不是连接失败（`Connection refused`），TCP 连接是成功的，是应用层拒绝
+
+**修复**（已在 `HttpServer.cs` 中更新）：同时注册两个 Prefix：
+```csharp
+_listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
+_listener.Prefixes.Add($"http://localhost:{Port}/");  // 新增
+```
+
+**临时绕过**：在修复版本之前，所有验证命令统一用 `127.0.0.1`（MCP Server TypeScript 代码已正确使用 `127.0.0.1`，不受此问题影响）。
+
+---
+
+**Q：`wscat: command not found` 怎么解决？**
+
+`wscat` 是一个 npm 工具，需要全局安装：
+
+```bash
+npm install -g wscat
+```
+
+安装后使用：
+```bash
+wscat -c ws://127.0.0.1:23457/ws
+```
+
+连接后在 Unity 中修改场景（如移动一个 GameObject），即可在终端看到 WebSocket 事件推送。
 
 ---
 
@@ -133,6 +212,45 @@ Domain Reload 会断开 WebSocket 连接，此时 `ws.waitForEvent` 会超时（
 
 ---
 
+**Q：AI 创建了 GameObject 但场景里只有空节点，脚本也没挂上去，怎么回事？**
+
+两个根本原因：
+
+**原因 1：`unity_create_gameobject` 没有指定 `primitive`**
+不带 `primitive` 参数时创建的是纯空 GameObject（没有 Mesh、Collider）。需要显式传入：
+```
+unity_create_gameobject("Paddle", primitive: "Cube")   ← 会自动附带 BoxCollider + MeshRenderer
+unity_create_gameobject("Ball",   primitive: "Sphere")
+```
+
+**原因 2：缺少 `unity_add_component` 工具（已修复）**
+此前 MCP Server 没有暴露 C# 后端已有的组件操作接口。现已新增三个工具：
+- `unity_get_components(path)` — 查看 GameObject 当前的组件列表
+- `unity_add_component(path, componentType)` — 挂载脚本或组件，如 `"Paddle"`、`"Rigidbody2D"`
+- `unity_set_component_property(path, componentType, properties)` — 设置组件字段值，如 `{ "speed": 8.0 }`
+
+**正确的游戏对象创建流程**：
+```
+1. unity_create_gameobject("Paddle", primitive: "Cube")  ← 有形状、有 Collider
+2. unity_write_file("Assets/Scripts/Paddle.cs", ...)     ← 写脚本
+3. unity_compile()                                        ← 等编译成功
+4. unity_add_component("Paddle", "Paddle")               ← 挂脚本
+5. unity_set_component_property("Paddle", "Paddle", {"speed": 8.0})  ← 设参数
+6. unity_save_scene()
+```
+
+---
+
+**Q：`unity_add_component` 传组件名时用全名还是短名？**
+
+两者都支持，按优先级：
+1. **短名**（推荐）：`"Paddle"`、`"Rigidbody2D"`、`"BoxCollider"` — 搜索所有已加载程序集
+2. **全名**：`"UnityEngine.Rigidbody2D"`、`"MyNamespace.Paddle"` — 直接精确匹配
+
+若短名匹配到多个类型（命名冲突），使用带命名空间的全名。
+
+---
+
 **Q：子任务超过 30 轮还没完成，怎么处理？**
 
 不要增大 `--max-turns`。正确做法：
@@ -140,6 +258,62 @@ Domain Reload 会断开 WebSocket 连接，此时 `ws.waitForEvent` 会超时（
 1. 检查任务描述是否过于宽泛（如"实现完整的战斗系统"应拆成多个子任务）
 2. 查看当前已完成的进度（通过 `--resume` 继续或从 JSON 输出中读取 summary）
 3. 将剩余工作拆成更小的子任务重新派发，用 `--resume` 保持上下文连续
+
+---
+
+**Q：为什么 MCP Server 用 ESM（`"type": "module"`），而 openclaw-plugin 用 CommonJS？**
+
+`@modelcontextprotocol/sdk` 的内部导入路径带 `.js` 扩展名（如 `@modelcontextprotocol/sdk/server/mcp.js`），这是 ESM 的规范，在 CommonJS + `moduleResolution: node` 下无法正确解析。因此 MCP Server 必须使用 ESM：
+
+```json
+{
+  "type": "module",
+  "compilerOptions": {
+    "module": "Node16",
+    "moduleResolution": "Node16"
+  }
+}
+```
+
+同时，MCP Server 内部的所有相对导入也必须带 `.js` 扩展名（即使源文件是 `.ts`）：
+
+```typescript
+import { UnityClient } from "./unity-client.js";  // ✅
+import { UnityClient } from "./unity-client";      // ❌ Node16 ESM 下会报错
+```
+
+---
+
+**Q：MCP Server `inputSchema` 应该用 zod 还是 JSON Schema？**
+
+推荐用 zod。`@modelcontextprotocol/sdk` 原生支持 zod 的 `ZodRawShape`（即对象各字段的 zod 类型），运行时自动转换为 JSON Schema 传给 Claude Code。
+
+```typescript
+// ✅ 用 zod（推荐）
+server.registerTool("unity_get_hierarchy", {
+  description: "...",
+  inputSchema: {
+    depth:    z.number().optional().describe("Max depth"),
+    maxNodes: z.number().optional().describe("Max nodes"),
+  },
+}, async ({ depth, maxNodes }) => { ... });
+
+// 无参数的工具传空对象
+server.registerTool("unity_save_scene", {
+  description: "...",
+  inputSchema: {},
+}, async () => { ... });
+```
+
+---
+
+**Q：MCP Server 工具返回 `content` 数组时，`type` 字段为什么要写 `"text" as const`？**
+
+TypeScript 会将字符串字面量 `"text"` 推断为 `string` 类型，而 MCP SDK 要求 `type` 是精确的字面量联合类型 `"text" | "image" | "resource"`。加 `as const` 避免类型不匹配编译错误：
+
+```typescript
+return { content: [{ type: "text" as const, text: "..." }] };
+```
 
 ---
 

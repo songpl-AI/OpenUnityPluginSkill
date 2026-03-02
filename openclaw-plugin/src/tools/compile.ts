@@ -1,5 +1,4 @@
 import { UnityClient } from "../unity-client";
-import { UnityWsClient } from "../unity-ws-client";
 import { formatCompileErrors, textResult, ToolResult } from "../utils/format";
 import { handleError, unityError } from "../utils/error";
 
@@ -7,45 +6,7 @@ import { handleError, unityError } from "../utils/error";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type API = any;
 
-export function registerCompileTools(api: API, client: UnityClient, ws: UnityWsClient): void {
-
-  api.registerTool({
-    name: "unity_compile",
-    description: "Trigger Unity script compilation and wait for the result. Returns compile errors if any.",
-    parameters: {
-      type: "object",
-      properties: {
-        timeoutSeconds: {
-          type: "number",
-          description: "Max seconds to wait for compilation result (default: 60)"
-        }
-      },
-      required: []
-    },
-    execute: async (_toolCallId: string, params: { timeoutSeconds?: number }): Promise<ToolResult> => {
-      try {
-        await client.ensureConnected();
-        // 触发编译
-        await client.post("/editor/compile");
-        // 等待 WebSocket 编译结果事件
-        const timeoutMs = (params?.timeoutSeconds ?? 60) * 1000;
-        const result    = await Promise.race([
-          ws.waitForEvent("compile_complete", timeoutMs),
-          ws.waitForEvent("compile_failed",   timeoutMs),
-        ]) as { errors?: unknown[] };
-
-        if (result?.errors?.length) {
-          // compile_failed
-          const errRes = await client.get<{ errors: unknown[] }>("/compile/errors");
-          if (!errRes.ok) return unityError(errRes);
-          // TODO: replace with SDK types
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return textResult(`Compilation FAILED:\n${formatCompileErrors(errRes.data.errors as any)}`);
-        }
-        return textResult("Compilation succeeded.");
-      } catch (err) { return handleError(err); }
-    }
-  });
+export function registerCompileTools(api: API, client: UnityClient): void {
 
   api.registerTool({
     name: "unity_get_compile_errors",

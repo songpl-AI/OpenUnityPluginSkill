@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "unity-editor": {
+      "command": "node",
+      "args": ["__MCP_SERVER_PATH__/dist/index.js"],
+      "env": {
+        "UNITY_PORT": "23456",
+        "UNITY_WS_PORT": "23457"
+      }
+    }
+  }
+}

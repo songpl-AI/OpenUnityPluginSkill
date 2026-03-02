@@ -15,7 +15,12 @@ function registerSceneTools(api, client) {
                 if (!res.ok)
                     return (0, format_1.textResult)(`Unity plugin is running but returned an error: ${res.error?.message}`);
                 const d = res.data;
-                return (0, format_1.textResult)(`Unity Editor is running.\nPlugin version: ${d.version}\nUnity version: ${d.unityVersion}\nOpen scene: ${d.sceneName}`);
+                return (0, format_1.textResult)(`Unity Editor is running.\n` +
+                    `Unity version: ${d.unityVersion}\n` +
+                    `Product: ${d.productName}\n` +
+                    `Open scene: ${d.currentScene || "(none)"}\n` +
+                    `Compile status: ${d.compileStatus}\n` +
+                    `Is playing: ${d.isPlaying}`);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);
@@ -65,23 +70,6 @@ function registerSceneTools(api, client) {
                 // TODO: replace with SDK types
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 return (0, format_1.textResult)(`Scene hierarchy:\n${(0, format_1.formatHierarchy)(res.data.roots)}`);
-            }
-            catch (err) {
-                return (0, error_1.handleError)(err);
-            }
-        }
-    });
-    api.registerTool({
-        name: "unity_save_scene",
-        description: "Save the currently open Unity scene.",
-        parameters: { type: "object", properties: {}, required: [] },
-        execute: async (_toolCallId) => {
-            try {
-                await client.ensureConnected();
-                const res = await client.post("/scene/save");
-                if (!res.ok)
-                    return (0, error_1.unityError)(res);
-                return (0, format_1.textResult)("Scene saved successfully.");
             }
             catch (err) {
                 return (0, error_1.handleError)(err);

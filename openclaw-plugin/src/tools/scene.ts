@@ -15,10 +15,21 @@ export function registerSceneTools(api: API, client: UnityClient): void {
     // _toolCallId 是框架注入的调用 ID，忽略即可
     execute: async (_toolCallId: string): Promise<ToolResult> => {
       try {
-        const res = await client.get<{ version: string; unityVersion: string; sceneName: string }>("/status");
+        const res = await client.get<{
+          status: string; unityVersion: string; productName: string;
+          isPlaying: boolean; isCompiling: boolean; compileStatus: string;
+          currentScene: string; httpPort: number; wsPort: number;
+        }>("/status");
         if (!res.ok) return textResult(`Unity plugin is running but returned an error: ${res.error?.message}`);
         const d = res.data;
-        return textResult(`Unity Editor is running.\nPlugin version: ${d.version}\nUnity version: ${d.unityVersion}\nOpen scene: ${d.sceneName}`);
+        return textResult(
+          `Unity Editor is running.\n` +
+          `Unity version: ${d.unityVersion}\n` +
+          `Product: ${d.productName}\n` +
+          `Open scene: ${d.currentScene || "(none)"}\n` +
+          `Compile status: ${d.compileStatus}\n` +
+          `Is playing: ${d.isPlaying}`
+        );
       } catch (err) { return handleError(err); }
     }
   });
@@ -65,17 +76,4 @@ export function registerSceneTools(api: API, client: UnityClient): void {
     }
   });
 
-  api.registerTool({
-    name: "unity_save_scene",
-    description: "Save the currently open Unity scene.",
-    parameters: { type: "object", properties: {}, required: [] },
-    execute: async (_toolCallId: string): Promise<ToolResult> => {
-      try {
-        await client.ensureConnected();
-        const res = await client.post("/scene/save");
-        if (!res.ok) return unityError(res);
-        return textResult("Scene saved successfully.");
-      } catch (err) { return handleError(err); }
-    }
-  });
 }

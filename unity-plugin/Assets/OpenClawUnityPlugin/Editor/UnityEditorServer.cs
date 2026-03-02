@@ -95,6 +95,7 @@ namespace OpenClaw.UnityPlugin
             router.Register("POST", "/api/v1/gameobject/parent",                       goHandler.HandleParent);
             router.Register("GET",  "/api/v1/gameobject/:path/components",             goHandler.HandleGetComponents);
             router.Register("GET",  "/api/v1/gameobject/:path/component/:type/values", goHandler.HandleGetComponentValues);
+            router.Register("POST", "/api/v1/gameobject/:path/component/:type/values", goHandler.HandleSetComponentValues);
             router.Register("POST", "/api/v1/gameobject/:path/component/add",          goHandler.HandleAddComponent);
             router.Register("POST", "/api/v1/gameobject/:path/component/remove",       goHandler.HandleRemoveComponent);
 

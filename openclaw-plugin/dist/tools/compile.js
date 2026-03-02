@@ -3,47 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerCompileTools = registerCompileTools;
 const format_1 = require("../utils/format");
 const error_1 = require("../utils/error");
-function registerCompileTools(api, client, ws) {
-    api.registerTool({
-        name: "unity_compile",
-        description: "Trigger Unity script compilation and wait for the result. Returns compile errors if any.",
-        parameters: {
-            type: "object",
-            properties: {
-                timeoutSeconds: {
-                    type: "number",
-                    description: "Max seconds to wait for compilation result (default: 60)"
-                }
-            },
-            required: []
-        },
-        execute: async (_toolCallId, params) => {
-            try {
-                await client.ensureConnected();
-                // 触发编译
-                await client.post("/editor/compile");
-                // 等待 WebSocket 编译结果事件
-                const timeoutMs = (params?.timeoutSeconds ?? 60) * 1000;
-                const result = await Promise.race([
-                    ws.waitForEvent("compile_complete", timeoutMs),
-                    ws.waitForEvent("compile_failed", timeoutMs),
-                ]);
-                if (result?.errors?.length) {
-                    // compile_failed
-                    const errRes = await client.get("/compile/errors");
-                    if (!errRes.ok)
-                        return (0, error_1.unityError)(errRes);
-                    // TODO: replace with SDK types
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    return (0, format_1.textResult)(`Compilation FAILED:\n${(0, format_1.formatCompileErrors)(errRes.data.errors)}`);
-                }
-                return (0, format_1.textResult)("Compilation succeeded.");
-            }
-            catch (err) {
-                return (0, error_1.handleError)(err);
-            }
-        }
-    });
+function registerCompileTools(api, client) {
     api.registerTool({
         name: "unity_get_compile_errors",
         description: "Get the list of compile errors from the last compilation attempt.",

@@ -3,82 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerGameObjectTools = registerGameObjectTools;
 const format_1 = require("../utils/format");
 const error_1 = require("../utils/error");
+/** Encode a GameObject hierarchy path for use as a URL path segment. */
+function encodeGoPath(path) {
+    return encodeURIComponent(path);
+}
+// Read-only tools only. Write operations (create, delete, transform, add_component, etc.)
+// are handled exclusively by Claude Code via MCP Server.
 function registerGameObjectTools(api, client) {
-    api.registerTool({
-        name: "unity_create_gameobject",
-        description: "Create a new GameObject in the current Unity scene.",
-        parameters: {
-            type: "object",
-            properties: {
-                name: { type: "string", description: "Name for the new GameObject" },
-                parentPath: { type: "string", description: "Scene path of the parent (e.g. 'Player/Body')" },
-                position: { type: "object", description: "World position", properties: { x: { type: "number" }, y: { type: "number" }, z: { type: "number" } } },
-                primitive: { type: "string", description: "Optional primitive type: Cube, Sphere, Capsule, Cylinder, Plane, Quad" }
-            },
-            required: ["name"]
-        },
-        execute: async (_toolCallId, params) => {
-            try {
-                await client.ensureConnected();
-                const res = await client.post("/gameobject/create", params);
-                if (!res.ok)
-                    return (0, error_1.unityError)(res);
-                return (0, format_1.textResult)(`Created GameObject '${res.data.name}' at path: ${res.data.path}`);
-            }
-            catch (err) {
-                return (0, error_1.handleError)(err);
-            }
-        }
-    });
-    api.registerTool({
-        name: "unity_delete_gameobject",
-        description: "Delete a GameObject from the current scene by its scene path.",
-        parameters: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "Scene hierarchy path, e.g. 'Player/Weapon'" }
-            },
-            required: ["path"]
-        },
-        execute: async (_toolCallId, params) => {
-            try {
-                await client.ensureConnected();
-                const res = await client.post("/gameobject/delete", params);
-                if (!res.ok)
-                    return (0, error_1.unityError)(res);
-                return (0, format_1.textResult)(`Deleted GameObject: ${params.path}`);
-            }
-            catch (err) {
-                return (0, error_1.handleError)(err);
-            }
-        }
-    });
-    api.registerTool({
-        name: "unity_set_transform",
-        description: "Set position, rotation (Euler angles), or scale of a GameObject.",
-        parameters: {
-            type: "object",
-            properties: {
-                path: { type: "string", description: "Scene path of the target GameObject" },
-                position: { type: "object", description: "World position", properties: { x: { type: "number" }, y: { type: "number" }, z: { type: "number" } } },
-                rotation: { type: "object", description: "Euler angles in degrees", properties: { x: { type: "number" }, y: { type: "number" }, z: { type: "number" } } },
-                scale: { type: "object", description: "Local scale", properties: { x: { type: "number" }, y: { type: "number" }, z: { type: "number" } } }
-            },
-            required: ["path"]
-        },
-        execute: async (_toolCallId, params) => {
-            try {
-                await client.ensureConnected();
-                const res = await client.post("/gameobject/transform", params);
-                if (!res.ok)
-                    return (0, error_1.unityError)(res);
-                return (0, format_1.textResult)(`Transform updated for: ${params.path}`);
-            }
-            catch (err) {
-                return (0, error_1.handleError)(err);
-            }
-        }
-    });
     api.registerTool({
         name: "unity_find_gameobjects",
         description: "Find GameObjects in the current scene by name or tag.",
@@ -99,6 +30,27 @@ function registerGameObjectTools(api, client) {
                 if (!res.data.count)
                     return (0, format_1.textResult)("No GameObjects found matching criteria.");
                 return (0, format_1.textResult)(res.data.objects.map(o => `• ${o.path} (tag: ${o.tag}, active: ${o.active})`).join("\n"));
+            }
+            catch (err) {
+                return (0, error_1.handleError)(err);
+            }
+        }
+    });
+    api.registerTool({
+        name: "unity_get_components",
+        description: "List all components attached to a GameObject.",
+        parameters: {
+            type: "object",
+            properties: { path: { type: "string", description: "Scene hierarchy path, e.g. 'Paddle'" } },
+            required: ["path"]
+        },
+        execute: async (_toolCallId, params) => {
+            try {
+                await client.ensureConnected();
+                const res = await client.get(`/gameobject/${encodeGoPath(params.path)}/components`);
+                if (!res.ok)
+                    return (0, error_1.unityError)(res);
+                return (0, format_1.textResult)(`Components on '${params.path}':\n${res.data.components.map(c => `• ${c}`).join("\n")}`);
             }
             catch (err) {
                 return (0, error_1.handleError)(err);

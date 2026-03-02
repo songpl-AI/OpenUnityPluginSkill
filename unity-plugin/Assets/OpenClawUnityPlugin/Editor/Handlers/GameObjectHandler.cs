@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -189,6 +190,51 @@ namespace OpenClaw.UnityPlugin
             ResponseHelper.WriteSuccess(ctx.Response, new { path, removed = req.ComponentType });
         }
 
+        public void HandleSetComponentValues(HttpContext ctx)
+        {
+            var path = ctx.PathParams.GetValueOrDefault("path", "");
+            var type = ctx.PathParams.GetValueOrDefault("type", "");
+            var req  = ctx.ParseBody<SetComponentValuesRequest>();
+
+            if (req?.Values == null || req.Values.Count == 0)
+            {
+                ResponseHelper.WriteError(ctx.Response, ErrorCode.InvalidParams, "'values' map is required");
+                return;
+            }
+
+            var updated = MainThreadDispatcher.Dispatch(() =>
+            {
+                var go = GameObject.Find(path);
+                if (go == null) throw new Exception($"GameObject '{path}' not found");
+
+                // 支持短名（如 "Paddle"）和完整名（如 "MyNamespace.Paddle"）
+                Component comp = go.GetComponent(type);
+                if (comp == null)
+                {
+                    foreach (var c in go.GetComponents<Component>())
+                    {
+                        if (c != null && (c.GetType().Name == type || c.GetType().FullName == type))
+                        { comp = c; break; }
+                    }
+                }
+                if (comp == null) throw new Exception($"Component '{type}' not found on '{path}'");
+
+                var so          = new SerializedObject(comp);
+                var updatedKeys = new List<string>();
+                foreach (var kvp in req.Values)
+                {
+                    var prop = so.FindProperty(kvp.Key);
+                    if (prop == null) continue;
+                    ApplySerializedValue(prop, kvp.Value);
+                    updatedKeys.Add(kvp.Key);
+                }
+                so.ApplyModifiedProperties();
+                return updatedKeys;
+            });
+
+            ResponseHelper.WriteSuccess(ctx.Response, new { path, componentType = type, updated });
+        }
+
         // --- Helpers ---
 
         private static string GetPath(GameObject go)
@@ -223,6 +269,29 @@ namespace OpenClaw.UnityPlugin
             return null;
         }
 
+        private static void ApplySerializedValue(SerializedProperty prop, JToken value)
+        {
+            if (value == null || value.Type == JTokenType.Null) return;
+            switch (prop.propertyType)
+            {
+                case SerializedPropertyType.Integer: prop.intValue    = value.Value<int>();    break;
+                case SerializedPropertyType.Float:   prop.floatValue  = value.Value<float>();  break;
+                case SerializedPropertyType.Boolean: prop.boolValue   = value.Value<bool>();   break;
+                case SerializedPropertyType.String:  prop.stringValue = value.Value<string>(); break;
+                case SerializedPropertyType.Vector2:
+                    prop.vector2Value = new Vector2(
+                        value["x"]?.Value<float>() ?? 0f,
+                        value["y"]?.Value<float>() ?? 0f); break;
+                case SerializedPropertyType.Vector3:
+                    prop.vector3Value = new Vector3(
+                        value["x"]?.Value<float>() ?? 0f,
+                        value["y"]?.Value<float>() ?? 0f,
+                        value["z"]?.Value<float>() ?? 0f); break;
+                case SerializedPropertyType.Enum:
+                    if (value.Type == JTokenType.Integer) prop.enumValueIndex = value.Value<int>(); break;
+            }
+        }
+
         // --- Request DTOs ---
         private class CreateGoRequest
         {
@@ -234,7 +303,8 @@ namespace OpenClaw.UnityPlugin
         private class PathRequest       { [JsonProperty("path")]       public string Path       { get; set; } }
         private class ParentRequest     { [JsonProperty("path")]       public string Path       { get; set; }
                                           [JsonProperty("parentPath")] public string ParentPath { get; set; } }
-        private class ComponentTypeRequest { [JsonProperty("componentType")] public string ComponentType { get; set; } }
+        private class ComponentTypeRequest      { [JsonProperty("componentType")] public string ComponentType { get; set; } }
+        private class SetComponentValuesRequest { [JsonProperty("values")] public Dictionary<string, JToken> Values { get; set; } }
         private class TransformRequest
         {
             [JsonProperty("path")]     public string     Path     { get; set; }

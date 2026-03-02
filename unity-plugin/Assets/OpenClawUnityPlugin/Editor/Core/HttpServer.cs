@@ -30,6 +30,7 @@ namespace OpenClaw.UnityPlugin
             Port = FindAvailablePort(preferredPort);
             _listener = new HttpListener();
             _listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
+            _listener.Prefixes.Add($"http://localhost:{Port}/"); // 同时接受 localhost（Host 头校验）
 
             try
             {
