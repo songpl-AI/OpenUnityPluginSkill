@@ -15,12 +15,12 @@ export class UnityClient {
         }
         return this.request(url.toString(), { method: "GET" });
     }
-    async post(path, body) {
+    async post(path, body, options) {
         return this.request(`${this.baseUrl}${path}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: body ? JSON.stringify(body) : undefined,
-        });
+        }, options?.timeoutMs);
     }
     async ensureConnected() {
         try {
@@ -38,9 +38,9 @@ export class UnityClient {
                 `Error: ${msg}`);
         }
     }
-    async request(url, init) {
+    async request(url, init, timeoutMs) {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), this.timeout);
+        const timer = setTimeout(() => controller.abort(), timeoutMs ?? this.timeout);
         try {
             const res = await fetch(url, { ...init, signal: controller.signal });
             const json = await res.json();

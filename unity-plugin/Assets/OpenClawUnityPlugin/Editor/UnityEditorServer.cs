@@ -154,6 +154,12 @@ namespace OpenClaw.UnityPlugin
             router.Register("GET", "/api/v1/project/input-system",     settingsHandler.HandleGetInputSystem);
             router.Register("GET", "/api/v1/project/player-settings",  settingsHandler.HandleGetPlayerSettings);
 
+            // Package Manager
+            var packageHandler = new PackageHandler();
+            router.Register("GET",  "/api/v1/package/list",   packageHandler.HandleList);
+            router.Register("POST", "/api/v1/package/add",    packageHandler.HandleAdd);
+            router.Register("POST", "/api/v1/package/remove", packageHandler.HandleRemove);
+
             Debug.Log($"[OpenClaw] Registered {router.RouteCount} routes.");
         }
     }

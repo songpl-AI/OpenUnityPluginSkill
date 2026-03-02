@@ -15,7 +15,9 @@ export declare class UnityClient {
     private timeout;
     constructor(config: UnityClientConfig);
     get<T = unknown>(path: string, params?: Record<string, string | number>): Promise<UnityResponse<T>>;
-    post<T = unknown>(path: string, body?: unknown): Promise<UnityResponse<T>>;
+    post<T = unknown>(path: string, body?: unknown, options?: {
+        timeoutMs?: number;
+    }): Promise<UnityResponse<T>>;
     ensureConnected(): Promise<void>;
     private request;
 }

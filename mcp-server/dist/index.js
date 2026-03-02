@@ -9,6 +9,7 @@ import { registerCompileTools } from "./tools/compile.js";
 import { registerProjectTools } from "./tools/project.js";
 import { registerTagTools } from "./tools/tag.js";
 import { registerSettingsTools } from "./tools/settings.js";
+import { registerPackageTools } from "./tools/package.js";
 const server = new McpServer({
     name: "unity-editor",
     version: "1.0.0",
@@ -28,6 +29,7 @@ registerCompileTools(server, client, ws); // ws 传入 compile 工具
 registerProjectTools(server, client);
 registerTagTools(server, client);
 registerSettingsTools(server, client);
+registerPackageTools(server, client);
 // stdio 传输：按需启动，无需长驻进程
 const transport = new StdioServerTransport();
 await server.connect(transport);
