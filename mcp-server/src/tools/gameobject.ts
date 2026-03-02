@@ -20,12 +20,14 @@ export function registerGameObjectTools(server: McpServer, client: UnityClient):
       parentPath: z.string().optional().describe("Scene path of the parent (e.g. 'Player/Body')"),
       position:   vec3.optional().describe("World position"),
       primitive:  z.string().optional().describe("Optional primitive type: Cube, Sphere, Capsule, Cylinder, Plane, Quad"),
+      tag:        z.string().optional().describe("Tag to assign to the GameObject (e.g., 'Player', 'Enemy')"),
     },
   }, async (params) => {
     await client.ensureConnected();
-    const res = await client.post<{ path: string; name: string }>("/gameobject/create", params);
+    const res = await client.post<{ path: string; name: string; tag: string }>("/gameobject/create", params);
     if (!res.ok) throw new Error(`Unity API Error [${res.error?.code}]: ${res.error?.message}`);
-    return { content: [{ type: "text" as const, text: `Created GameObject '${res.data.name}' at path: ${res.data.path}` }] };
+    const tagInfo = res.data.tag ? ` (tag: ${res.data.tag})` : "";
+    return { content: [{ type: "text" as const, text: `Created GameObject '${res.data.name}' at path: ${res.data.path}${tagInfo}` }] };
   });
 
   server.registerTool("unity_delete_gameobject", {

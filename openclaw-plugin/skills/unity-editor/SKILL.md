@@ -9,7 +9,7 @@ description: >
   request — even if the user doesn't say "Unity" explicitly, context like "game", "player controller",
   "enemy AI", "scene setup" should trigger this skill.
 metadata: '{"openclaw":{"requires":{"config":["plugins.unity-editor.enabled"]}}}'
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Unity Editor Skill
@@ -27,7 +27,7 @@ All Unity operations are executed by **Claude Code via MCP**. You have no direct
 Call the `exec` tool with these exact parameters:
 
 ```
-exec host:gateway pty:true workdir:"/Users/tal/Documents/UnityProjects/TestOpenClawUnityPluginSkill" command:"claude -p '<task description>' --mcp-config ~/.claude/unity-mcp-config.json --allowedTools 'mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_scene_info,mcp__unity-editor__unity_get_hierarchy,mcp__unity-editor__unity_save_scene,mcp__unity-editor__unity_create_gameobject,mcp__unity-editor__unity_delete_gameobject,mcp__unity-editor__unity_set_transform,mcp__unity-editor__unity_find_gameobjects,mcp__unity-editor__unity_get_components,mcp__unity-editor__unity_add_component,mcp__unity-editor__unity_set_component_property,mcp__unity-editor__unity_read_file,mcp__unity-editor__unity_write_file,mcp__unity-editor__unity_compile,mcp__unity-editor__unity_get_compile_errors,mcp__unity-editor__unity_get_console_logs,mcp__unity-editor__unity_get_project_info,mcp__unity-editor__unity_get_scripts,mcp__unity-editor__unity_find_assets' --append-system-prompt 'All file operations must stay within Assets/.' --max-turns 30"
+exec host:gateway pty:true workdir:"/Users/tal/Documents/UnityProjects/TestOpenClawUnityPluginSkill" command:"claude -p '<task description>' --mcp-config ~/.claude/unity-mcp-config.json --allowedTools 'mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_scene_info,mcp__unity-editor__unity_get_hierarchy,mcp__unity-editor__unity_save_scene,mcp__unity-editor__unity_create_gameobject,mcp__unity-editor__unity_delete_gameobject,mcp__unity-editor__unity_set_transform,mcp__unity-editor__unity_find_gameobjects,mcp__unity-editor__unity_get_components,mcp__unity-editor__unity_add_component,mcp__unity-editor__unity_set_component_property,mcp__unity-editor__unity_read_file,mcp__unity-editor__unity_write_file,mcp__unity-editor__unity_compile,mcp__unity-editor__unity_get_compile_errors,mcp__unity-editor__unity_get_console_logs,mcp__unity-editor__unity_get_project_info,mcp__unity-editor__unity_get_scripts,mcp__unity-editor__unity_find_assets,mcp__unity-editor__unity_get_tags,mcp__unity-editor__unity_create_tag,mcp__unity-editor__unity_set_gameobject_tag,mcp__unity-editor__unity_get_input_system_type,mcp__unity-editor__unity_get_player_settings' --append-system-prompt 'All file operations must stay within Assets/.' --max-turns 30"
 ```
 
 Wait for the exec to complete (1–5 min), then **write a text reply** to the user.
@@ -41,7 +41,7 @@ Read the output and reply to the user. Examples:
 ## Follow-up task (continue session)
 
 ```
-exec host:gateway pty:true workdir:"/Users/tal/Documents/UnityProjects/TestOpenClawUnityPluginSkill" command:"claude -p '<next task>' --resume <session_id from previous output> --mcp-config ~/.claude/unity-mcp-config.json --allowedTools 'mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_scene_info,mcp__unity-editor__unity_get_hierarchy,mcp__unity-editor__unity_save_scene,mcp__unity-editor__unity_create_gameobject,mcp__unity-editor__unity_delete_gameobject,mcp__unity-editor__unity_set_transform,mcp__unity-editor__unity_find_gameobjects,mcp__unity-editor__unity_get_components,mcp__unity-editor__unity_add_component,mcp__unity-editor__unity_set_component_property,mcp__unity-editor__unity_read_file,mcp__unity-editor__unity_write_file,mcp__unity-editor__unity_compile,mcp__unity-editor__unity_get_compile_errors,mcp__unity-editor__unity_get_console_logs,mcp__unity-editor__unity_get_project_info,mcp__unity-editor__unity_get_scripts,mcp__unity-editor__unity_find_assets' --max-turns 30"
+exec host:gateway pty:true workdir:"/Users/tal/Documents/UnityProjects/TestOpenClawUnityPluginSkill" command:"claude -p '<next task>' --resume <session_id from previous output> --mcp-config ~/.claude/unity-mcp-config.json --allowedTools 'mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_scene_info,mcp__unity-editor__unity_get_hierarchy,mcp__unity-editor__unity_save_scene,mcp__unity-editor__unity_create_gameobject,mcp__unity-editor__unity_delete_gameobject,mcp__unity-editor__unity_set_transform,mcp__unity-editor__unity_find_gameobjects,mcp__unity-editor__unity_get_components,mcp__unity-editor__unity_add_component,mcp__unity-editor__unity_set_component_property,mcp__unity-editor__unity_read_file,mcp__unity-editor__unity_write_file,mcp__unity-editor__unity_compile,mcp__unity-editor__unity_get_compile_errors,mcp__unity-editor__unity_get_console_logs,mcp__unity-editor__unity_get_project_info,mcp__unity-editor__unity_get_scripts,mcp__unity-editor__unity_find_assets,mcp__unity-editor__unity_get_tags,mcp__unity-editor__unity_create_tag,mcp__unity-editor__unity_set_gameobject_tag,mcp__unity-editor__unity_get_input_system_type,mcp__unity-editor__unity_get_player_settings' --max-turns 30"
 ```
 
 ## Task Decomposition

@@ -7,6 +7,7 @@ namespace OpenClaw.UnityPlugin
     /// <summary>
     /// 插件入口。[InitializeOnLoad] 确保 Unity Editor 启动及 Domain Reload 后自动运行。
     /// 负责按依赖顺序初始化和关闭所有核心组件。
+    /// Version: 1.1.0 - Added Tag and Settings APIs
     /// </summary>
     [InitializeOnLoad]
     public static class UnityEditorServer
@@ -141,6 +142,17 @@ namespace OpenClaw.UnityPlugin
             router.Register("GET",  "/api/v1/build/settings", buildHandler.HandleSettings);
             router.Register("POST", "/api/v1/build/run",      buildHandler.HandleRun);
             router.Register("GET",  "/api/v1/build/status",   buildHandler.HandleStatus);
+
+            // Tag
+            var tagHandler = new TagHandler();
+            router.Register("GET",  "/api/v1/tag/list",   tagHandler.HandleGetTags);
+            router.Register("POST", "/api/v1/tag/create", tagHandler.HandleCreateTag);
+            router.Register("POST", "/api/v1/tag/set",    tagHandler.HandleSetGameObjectTag);
+
+            // Settings
+            var settingsHandler = new SettingsHandler();
+            router.Register("GET", "/api/v1/project/input-system",     settingsHandler.HandleGetInputSystem);
+            router.Register("GET", "/api/v1/project/player-settings",  settingsHandler.HandleGetPlayerSettings);
 
             Debug.Log($"[OpenClaw] Registered {router.RouteCount} routes.");
         }

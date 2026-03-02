@@ -188,6 +188,11 @@ curl "http://127.0.0.1:23456/api/v1/scene/hierarchy"
 | `unity_get_project_info` | 获取项目名称、Unity 版本等基本信息 |
 | `unity_get_scripts` | 列出项目中的所有 C# 脚本 |
 | `unity_find_assets` | 按类型或关键字搜索资产 |
+| `unity_get_tags` | 获取项目中所有已定义的 Tag |
+| `unity_create_tag` | 创建新 Tag（写入 TagManager.asset）|
+| `unity_set_gameobject_tag` | 为 GameObject 设置 Tag |
+| `unity_get_input_system_type` | 检测项目使用的输入系统（legacy/new/both）|
+| `unity_get_player_settings` | 获取 Player Settings 关键配置 |
 
 ---
 

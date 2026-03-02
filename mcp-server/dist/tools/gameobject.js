@@ -14,13 +14,15 @@ export function registerGameObjectTools(server, client) {
             parentPath: z.string().optional().describe("Scene path of the parent (e.g. 'Player/Body')"),
             position: vec3.optional().describe("World position"),
             primitive: z.string().optional().describe("Optional primitive type: Cube, Sphere, Capsule, Cylinder, Plane, Quad"),
+            tag: z.string().optional().describe("Tag to assign to the GameObject (e.g., 'Player', 'Enemy')"),
         },
     }, async (params) => {
         await client.ensureConnected();
         const res = await client.post("/gameobject/create", params);
         if (!res.ok)
             throw new Error(`Unity API Error [${res.error?.code}]: ${res.error?.message}`);
-        return { content: [{ type: "text", text: `Created GameObject '${res.data.name}' at path: ${res.data.path}` }] };
+        const tagInfo = res.data.tag ? ` (tag: ${res.data.tag})` : "";
+        return { content: [{ type: "text", text: `Created GameObject '${res.data.name}' at path: ${res.data.path}${tagInfo}` }] };
     });
     server.registerTool("unity_delete_gameobject", {
         description: "Delete a GameObject from the current scene by its scene path.",

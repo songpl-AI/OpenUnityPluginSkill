@@ -56,8 +56,14 @@ namespace OpenClaw.UnityPlugin
                 if (req.Position != null)
                     go.transform.position = new Vector3(req.Position.X, req.Position.Y, req.Position.Z);
 
+                // 设置 Tag（如果提供）
+                if (!string.IsNullOrEmpty(req.Tag))
+                {
+                    go.tag = req.Tag;
+                }
+
                 Undo.RegisterCreatedObjectUndo(go, $"Create {req.Name}");
-                return new { path = GetPath(go), name = go.name };
+                return new { path = GetPath(go), name = go.name, tag = go.tag };
             });
             ResponseHelper.WriteSuccess(ctx.Response, result);
         }
@@ -299,6 +305,7 @@ namespace OpenClaw.UnityPlugin
             [JsonProperty("parentPath")] public string          ParentPath { get; set; }
             [JsonProperty("position")]   public Vector3Dto      Position   { get; set; }
             [JsonProperty("primitive")]  public PrimitiveType?  Primitive  { get; set; }
+            [JsonProperty("tag")]        public string          Tag        { get; set; }
         }
         private class PathRequest       { [JsonProperty("path")]       public string Path       { get; set; } }
         private class ParentRequest     { [JsonProperty("path")]       public string Path       { get; set; }
