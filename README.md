@@ -2,6 +2,9 @@
 
 让 AI Agent 通过自然语言控制 Unity Editor：读写场景、修改脚本、编译反馈、资源查询。
 
+> **本 README 为 OpenClaw 集成安装指南。**
+> 如需在 Claude Code / Cursor / Claude Desktop 等 MCP 客户端中独立使用，请参阅 [`unity-editor-mcp/README.md`](./unity-editor-mcp/README.md)。
+
 ---
 
 ## 环境要求
@@ -21,7 +24,7 @@
 
 **1.1 复制插件文件**
 
-将 `unity-plugin/Assets/OpenClawUnityPlugin/` 整个文件夹复制到你的 Unity 工程的 `Assets/` 目录下：
+将 `unity-editor-mcp/unity-plugin/Editor/` 整个文件夹复制到你的 Unity 工程的 `Assets/` 目录下：
 
 ```
 Assets/
@@ -33,6 +36,8 @@ Assets/
         ├── UnityEditorServer.cs
         └── OpenClawUnityPlugin.Editor.asmdef
 ```
+
+> 或通过 UPM Git URL 安装，详见 `unity-editor-mcp/README.md`。
 
 **1.2 安装 Newtonsoft.Json**
 
@@ -66,7 +71,7 @@ Console 中应出现：
 **1.4 验证 HTTP 服务**
 
 ```bash
-curl -s http://localhost:23456/api/v1/status | python3 -m json.tool
+curl -s http://127.0.0.1:23456/api/v1/status | python3 -m json.tool
 ```
 
 预期响应：
@@ -151,10 +156,13 @@ Agent 应调用 `unity_get_hierarchy` 并返回场景树。
 | `unity_get_scene_info` | 当前场景名称、路径、是否有未保存改动 |
 | `unity_get_hierarchy` | 完整 GameObject 树 |
 | `unity_save_scene` | 保存场景 |
-| `unity_create_gameobject` | 在场景中创建对象 |
+| `unity_create_gameobject` | 在场景中创建对象（支持 tag 参数）|
 | `unity_delete_gameobject` | 删除对象 |
 | `unity_set_transform` | 设置位置/旋转/缩放 |
 | `unity_find_gameobjects` | 按名称或 Tag 查找对象 |
+| `unity_get_components` | 获取 GameObject 上的组件列表 |
+| `unity_add_component` | 添加组件到 GameObject |
+| `unity_set_component_property` | 设置组件属性值 |
 | `unity_read_file` | 读取 Assets/ 内任意文件 |
 | `unity_write_file` | 写入/覆盖 Assets/ 内文件 |
 | `unity_compile` | 触发编译，通过 WebSocket 等待结果 |
@@ -163,6 +171,18 @@ Agent 应调用 `unity_get_hierarchy` 并返回场景树。
 | `unity_get_project_info` | 项目名、Unity 版本、已安装包 |
 | `unity_get_scripts` | 列出所有脚本类及公开 API |
 | `unity_find_assets` | 按类型/名称搜索资产 |
+| `unity_get_tags` | 获取项目中所有已定义 Tag |
+| `unity_create_tag` | 创建新 Tag |
+| `unity_set_gameobject_tag` | 为 GameObject 设置 Tag |
+| `unity_get_input_system_type` | 检测输入系统类型（legacy/new/both）|
+| `unity_get_player_settings` | 获取 Player Settings 关键配置 |
+| `unity_get_render_pipeline` | 检测渲染管线（Built-in/URP/HDRP）|
+| `unity_get_material_properties` | 查看材质所有属性及当前值 |
+| `unity_set_material_properties` | 设置材质属性（颜色/float/贴图等）|
+| `unity_assign_material` | 将材质赋给场景中 Renderer |
+| `unity_list_packages` | 列出已安装的 Unity 包 |
+| `unity_install_package` | 安装 Unity 包 |
+| `unity_remove_package` | 卸载 Unity 包 |
 
 ---
 
@@ -185,7 +205,7 @@ Agent 应调用 `unity_get_hierarchy` 并返回场景树。
 Unity 2021.3 的内置 HTTP 不支持 WebSocket，需要额外安装 `websocket-sharp`：
 
 1. 下载 [websocket-sharp.dll](https://github.com/sta/websocket-sharp)（MIT License，~200KB）
-2. 放入 `Assets/OpenClawUnityPlugin/Editor/` 目录
+2. 放入 `Assets/OpenClawUnityPlugin/Plugins/` 目录
 3. 在 Player Settings → Scripting Define Symbols 中添加：`WEBSOCKET_SHARP`
 
 Unity 2022.3 及以上无需此步骤，使用 .NET 内置实现。

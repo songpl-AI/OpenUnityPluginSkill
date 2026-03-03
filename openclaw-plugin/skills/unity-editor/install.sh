@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MCP_SERVER_DIR="$(cd "$SCRIPT_DIR/../../../mcp-server" && pwd)"
+MCP_SERVER_DIR="$(cd "$SCRIPT_DIR/../../../unity-editor-mcp/mcp-server" && pwd)"
 CONFIG_DEST="$HOME/.claude/unity-mcp-config.json"
 
 echo "=== Unity Editor MCP Skill 安装 ==="

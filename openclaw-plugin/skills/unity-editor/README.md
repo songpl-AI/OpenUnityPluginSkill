@@ -27,7 +27,7 @@ OpenClaw will decompose this into sub-tasks, dispatch each one to Claude Code (w
 Copy the plugin folder into your Unity project:
 
 ```
-unity-plugin/Assets/OpenClawUnityPlugin/  →  YourUnityProject/Assets/OpenClawUnityPlugin/
+unity-editor-mcp/unity-plugin/Editor/  →  YourUnityProject/Assets/OpenClawUnityPlugin/Editor/
 ```
 
 Wait for Unity to finish compiling. If **Newtonsoft.Json** is not installed, the plugin will install it automatically — watch the Console for:

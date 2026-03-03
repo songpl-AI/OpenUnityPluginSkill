@@ -1,3 +1,5 @@
+> **注意**：本文档为历史设计记录，路径引用可能已过时。当前代码位于 `unity-editor-mcp/`。
+
 # Unity Editor OpenClaw Plugin — FAQ
 
 **用途**: 记录开发过程中遇到的问题、排查过程和解决方案，防止重复踩坑。

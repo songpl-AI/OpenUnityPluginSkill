@@ -1,3 +1,5 @@
+> **注意**：本文档为历史设计记录，路径引用可能已过时。当前代码位于 `unity-editor-mcp/`。
+
 # 路径二：OpenClaw → Claude Code → MCP 委派模式
 
 **版本**: 1.0.0
