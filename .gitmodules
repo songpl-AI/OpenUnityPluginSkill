@@ -1,0 +1,3 @@
+[submodule "unity-editor-mcp"]
+	path = unity-editor-mcp
+	url = git@github.com:songpl-AI/unity-editor-mcp.git
