@@ -9,73 +9,48 @@ description: >
   request — even if the user doesn't say "Unity" explicitly, context like "game", "player controller",
   "enemy AI", "scene setup" should trigger this skill.
 metadata: '{"openclaw":{"requires":{"config":["plugins.unity-editor.enabled"]}}}'
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Unity Editor Skill
 
-Enables the AI Agent to control Unity Editor via HTTP + WebSocket — reading/writing scenes, scripts, assets, and forming a code self-correction loop.
+All Unity operations are executed by **Claude Code via MCP**. You have no direct Unity tools — your role is to receive the user's request, delegate it to Claude Code via `exec`, wait for it to finish, and **always reply to the user with the result**.
 
-## Prerequisites
+## ⚠️ Critical Rules
 
-Before using any tool, always call `unity_check_status` first if you're unsure whether Unity is running. If it returns an error, inform the user to:
-1. Open Unity Editor
-2. Ensure the OpenClaw Unity Plugin is in `Assets/OpenClawUnityPlugin/Editor/`
-3. Wait for Unity to finish compiling
+1. **Use the `exec` tool** (tool name is `exec`, NOT `bash`). Do NOT answer from your own knowledge.
+2. **Always include `host:gateway`** so the command runs on the host machine (not the sandbox).
+3. **Always send a text reply** to the user after the exec completes — never finish silently.
 
-## Available Tools (overview)
+## Executing Claude Code
 
-| Tool | Purpose |
-|------|---------|
-| `unity_check_status` | Check if Unity Editor is running and plugin is active |
-| `unity_get_scene_info` | Current scene name, path, dirty state |
-| `unity_get_hierarchy` | Full GameObject tree |
-| `unity_save_scene` | Save current scene |
-| `unity_create_gameobject` | Create object in scene |
-| `unity_delete_gameobject` | Delete object from scene |
-| `unity_set_transform` | Set position/rotation/scale |
-| `unity_find_gameobjects` | Find objects by name/tag |
-| `unity_read_file` | Read any file in Assets/ |
-| `unity_write_file` | Write/overwrite file in Assets/ |
-| `unity_compile` | Trigger compile, wait for result via WebSocket |
-| `unity_get_compile_errors` | Get last compile error list |
-| `unity_get_console_logs` | Get Unity Console output |
-| `unity_get_project_info` | Project name, Unity version, packages |
-| `unity_get_scripts` | All script classes with public API |
-| `unity_find_assets` | Search assets by type/name |
-
-Full parameter docs: `references/tools-reference.md`
-
-## Code Self-Correction Loop
-
-When writing or fixing C# scripts, always follow this pattern:
+Call the `exec` tool with these exact parameters:
 
 ```
-1. unity_get_scripts          ← understand existing code first
-2. unity_write_file           ← write the script
-3. unity_compile              ← compile and WAIT for result (WebSocket)
-4. if errors → unity_read_file + unity_write_file ← fix and repeat
-5. unity_get_console_logs     ← check runtime behavior after Play Mode
+exec host:gateway pty:true workdir:"/Users/tal/Documents/UnityProjects/TestOpenClawUnityPluginSkill" command:"claude -p '<task description>' --mcp-config ~/.claude/unity-mcp-config.json --allowedTools 'mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_scene_info,mcp__unity-editor__unity_get_hierarchy,mcp__unity-editor__unity_save_scene,mcp__unity-editor__unity_create_gameobject,mcp__unity-editor__unity_delete_gameobject,mcp__unity-editor__unity_set_transform,mcp__unity-editor__unity_find_gameobjects,mcp__unity-editor__unity_get_components,mcp__unity-editor__unity_add_component,mcp__unity-editor__unity_set_component_property,mcp__unity-editor__unity_read_file,mcp__unity-editor__unity_write_file,mcp__unity-editor__unity_compile,mcp__unity-editor__unity_get_compile_errors,mcp__unity-editor__unity_get_console_logs,mcp__unity-editor__unity_get_project_info,mcp__unity-editor__unity_get_scripts,mcp__unity-editor__unity_find_assets,mcp__unity-editor__unity_get_tags,mcp__unity-editor__unity_create_tag,mcp__unity-editor__unity_set_gameobject_tag,mcp__unity-editor__unity_get_input_system_type,mcp__unity-editor__unity_get_player_settings,mcp__unity-editor__unity_list_packages,mcp__unity-editor__unity_install_package,mcp__unity-editor__unity_remove_package,mcp__unity-editor__unity_get_render_pipeline,mcp__unity-editor__unity_get_material_properties,mcp__unity-editor__unity_set_material_properties,mcp__unity-editor__unity_assign_material' --append-system-prompt 'All file operations must stay within Assets/.' --max-turns 30"
 ```
 
-Never assume a script compiled successfully without calling `unity_compile` and checking the result.
+Wait for the exec to complete (1–5 min), then **write a text reply** to the user.
 
-## Accessing Existing Project Resources
+## After exec completes
 
-Before creating new assets or scripts, always check what already exists:
-- Scripts/classes: `unity_get_scripts`
-- Audio/textures/prefabs: `unity_find_assets` with type filter
-- Scene state: `unity_get_hierarchy`
-- Project packages: `unity_get_project_info`
+Read the output and reply to the user. Examples:
+- "✅ Cube created with bobbing animation script attached."
+- "❌ Unity is not running. Please open the Unity project first."
 
-## Error Handling
+## Follow-up task (continue session)
 
-| Error Code | Meaning | Action |
-|-----------|---------|--------|
-| `SERVER_NOT_READY` | Unity not running | Tell user to open Unity |
-| `SCENE_NOT_LOADED` | No scene open | Ask user to open a scene |
-| `OBJECT_NOT_FOUND` | Bad path | Use `unity_get_hierarchy` to find correct path |
-| `FILE_OUTSIDE_PROJECT` | Path outside Assets/ | Correct path to start with `Assets/` |
-| `COMPILE_ERROR` | Script error | Read compile errors and fix |
+```
+exec host:gateway pty:true workdir:"/Users/tal/Documents/UnityProjects/TestOpenClawUnityPluginSkill" command:"claude -p '<next task>' --resume <session_id from previous output> --mcp-config ~/.claude/unity-mcp-config.json --allowedTools 'mcp__unity-editor__unity_check_status,mcp__unity-editor__unity_get_scene_info,mcp__unity-editor__unity_get_hierarchy,mcp__unity-editor__unity_save_scene,mcp__unity-editor__unity_create_gameobject,mcp__unity-editor__unity_delete_gameobject,mcp__unity-editor__unity_set_transform,mcp__unity-editor__unity_find_gameobjects,mcp__unity-editor__unity_get_components,mcp__unity-editor__unity_add_component,mcp__unity-editor__unity_set_component_property,mcp__unity-editor__unity_read_file,mcp__unity-editor__unity_write_file,mcp__unity-editor__unity_compile,mcp__unity-editor__unity_get_compile_errors,mcp__unity-editor__unity_get_console_logs,mcp__unity-editor__unity_get_project_info,mcp__unity-editor__unity_get_scripts,mcp__unity-editor__unity_find_assets,mcp__unity-editor__unity_get_tags,mcp__unity-editor__unity_create_tag,mcp__unity-editor__unity_set_gameobject_tag,mcp__unity-editor__unity_get_input_system_type,mcp__unity-editor__unity_get_player_settings,mcp__unity-editor__unity_list_packages,mcp__unity-editor__unity_install_package,mcp__unity-editor__unity_remove_package,mcp__unity-editor__unity_get_render_pipeline,mcp__unity-editor__unity_get_material_properties,mcp__unity-editor__unity_set_material_properties,mcp__unity-editor__unity_assign_material' --max-turns 30"
+```
 
-When `unity_get_scripts` returns `degraded: true`, fix compile errors first before attempting to understand or extend code.
+## Task Decomposition
+
+Break large requests into sub-tasks each completable in ≤ 30 turns:
+
+```
+"Player controller: movement + jump + coyote time"
+  → Sub-task 1: basic left/right movement
+  → Sub-task 2: jump with Rigidbody2D
+  → Sub-task 3: coyote time
+```

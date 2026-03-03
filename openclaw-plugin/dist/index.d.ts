@@ -1,3 +1,1 @@
-type OpenClawPluginAPI = any;
-export default function register(api: OpenClawPluginAPI): void;
-export {};
+export default function register(_api: any): void;

@@ -15,11 +15,13 @@
 项目根/
 ├── AGENTS.md                  ← 本文件
 ├── docs/                      ← 设计文档（非代码）
-├── unity-plugin/              ← Unity C# 插件（Editor-only）
-│   └── Assets/OpenClawUnityPlugin/Editor/
-└── openclaw-plugin/           ← OpenClaw TypeScript 插件
-    ├── openclaw.plugin.json
-    └── skills/unity-editor/SKILL.md
+├── unity-editor-mcp/          ← 独立发布包（MCP Server + Unity Plugin）
+│   ├── mcp-server/            ← Node.js MCP Server（30 个工具）
+│   └── unity-plugin/          ← Unity C# 插件（UPM 格式）
+│       └── Editor/
+└── openclaw-plugin/           ← OpenClaw 专属封装层
+    └── skills/unity-editor/
+        └── SKILL.md
 ```
 
 ---
@@ -63,30 +65,28 @@ var go = MainThreadDispatcher.Dispatch(() => GameObject.Find("Player"));
 
 ---
 
-## OpenClaw Plugin (TypeScript) 规范
+## MCP Server (TypeScript) 规范
+
+> 适用于 `unity-editor-mcp/mcp-server/src/`，也适用于 `openclaw-plugin/src/`（工具逻辑相同，注册 API 不同）。
 
 ### 强制规则
 
 **工具命名** — 所有工具名以 `unity_` 前缀开头，使用 `snake_case`（如 `unity_get_hierarchy`）。
 
-**连接前置检查** — 每个工具的 `execute` 函数第一步必须调用 `ensureUnityConnected()`，不得跳过。
+**错误抛出而非返回** — MCP handler 内部用 `throw new Error(...)` 报错，SDK 自动将其转为 MCP 错误响应。不得 `return` 错误字符串。
 
-**不抛出异常** — `execute` 函数内部捕获所有异常，返回用户可读的错误字符串，不得向 OpenClaw 框架抛出未处理异常。
+**MCP handler 正确返回格式：**
 
 ```typescript
-// ✅ 正确模式
-execute: async (params) => {
-  try {
-    await ensureUnityConnected();
-    const res = await client.post("/api/v1/...", params);
-    return formatResult(res.data);
-  } catch (err) {
-    return `Error: ${err.message}`;
-  }
-}
+// ✅ MCP Server 正确模式（unity-editor-mcp/mcp-server/src/tools/*.ts）
+server.tool("unity_get_hierarchy", { description: "...", inputSchema: {} }, async () => {
+  const res = await client.get("/api/v1/scene/hierarchy");
+  if (!res.ok) throw new Error(res.error?.message ?? "Unknown error");
+  return { content: [{ type: "text", text: formatHierarchy(res.data) }] };
+});
 ```
 
-**输出格式化** — 工具返回值是给 Agent 读的文本，必须经过 `utils/format.ts` 格式化，不得直接返回原始 JSON 字符串。
+**输出格式化** — 工具返回文本给 Agent 读，必须经过 `utils/format.ts` 格式化，不得直接返回原始 JSON 字符串。
 
 ### 代码风格
 
@@ -96,7 +96,9 @@ execute: async (params) => {
 
 ---
 
-## Skill 规范
+## OpenClaw Skill 规范
+
+> 仅适用于 `openclaw-plugin/skills/unity-editor/SKILL.md`。
 
 **触发描述要"主动"** — `SKILL.md` 的 `description` 字段需覆盖用户可能说的各种表达，避免 undertrigger。参考 `docs/架构设计.md` § 2.4。
 
@@ -122,10 +124,10 @@ execute: async (params) => {
 
 ## 当前开发阶段
 
-**阶段二（Unity C# Plugin + OpenClaw Plugin 主体）已完成，待集成测试。**
+**功能已稳定，已剥离为独立发布包 `unity-editor-mcp/`，支持 Claude Code / Cursor / Claude Desktop / Continue。**
 
 进度详情：`docs/开发进度.md`
-下一步：将 `unity-plugin/` 导入真实 Unity 工程，运行集成测试（HTTP 连通 → WebSocket 事件 → 代码自修正循环）
+插件路径：`unity-editor-mcp/unity-plugin/Editor/`（复制到 Unity 工程 Assets/ 或通过 UPM 安装）
 
 ---
 
