@@ -13,7 +13,7 @@ OpenClaw will decompose this into sub-tasks, dispatch each one to Claude Code (w
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| Unity Editor | 2021.3 LTS+ or 2022.3 LTS+ or Unity 6 | Unity 6 (6000.x) confirmed working |
+| Unity Editor | 2020.3 LTS+ | Unity 6 (6000.x) confirmed working |
 | Node.js | 18+ | Required by the MCP Server |
 | Claude Code CLI | Latest | `claude` command must be in PATH |
 | OpenClaw | Latest | This skill runs inside OpenClaw |
@@ -27,7 +27,7 @@ OpenClaw will decompose this into sub-tasks, dispatch each one to Claude Code (w
 Copy the plugin folder into your Unity project:
 
 ```
-unity-editor-mcp/unity-plugin/Editor/  →  YourUnityProject/Assets/OpenClawUnityPlugin/Editor/
+unity-editor-mcp/unity-mcp-plugin/Editor/  →  YourUnityProject/Assets/OpenClawUnityPlugin/Editor/
 ```
 
 Wait for Unity to finish compiling. If **Newtonsoft.Json** is not installed, the plugin will install it automatically — watch the Console for:
@@ -161,8 +161,8 @@ mcp-server/           ← MCP Server (built by install.sh)
 │   └── tools/        ← 16 Unity tools
 └── dist/             ← Compiled output (generated)
 
-unity-plugin/
-└── Assets/OpenClawUnityPlugin/Editor/
+unity-mcp-plugin/
+└── Editor/
     ├── Core/         ← HTTP + WebSocket server
     ├── Handlers/     ← Route handlers for each API endpoint
     └── Setup/        ← Auto-installs Newtonsoft.Json on first import
@@ -176,4 +176,5 @@ unity-plugin/
 |---------|-------------------|-------|
 | Unity 6 (6000.x) | Built-in | Confirmed working |
 | Unity 2022.3 LTS | Built-in | Recommended |
-| Unity 2021.3 LTS | websocket-sharp | Requires manual package install |
+| Unity 2020.3 LTS | websocket-sharp | Requires manual package install |
+| Unity 2021.x LTS | websocket-sharp | Requires manual package install |

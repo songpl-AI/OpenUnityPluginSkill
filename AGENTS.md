@@ -17,7 +17,7 @@
 ├── docs/                      ← 设计文档（非代码）
 ├── unity-editor-mcp/          ← 独立发布包（MCP Server + Unity Plugin）
 │   ├── mcp-server/            ← Node.js MCP Server（30 个工具）
-│   └── unity-plugin/          ← Unity C# 插件（UPM 格式）
+│   └── unity-mcp-plugin/      ← Unity C# 插件（UPM 格式）
 │       └── Editor/
 └── openclaw-plugin/           ← OpenClaw 专属封装层
     └── skills/unity-editor/
@@ -113,12 +113,12 @@ server.tool("unity_get_hierarchy", { description: "...", inputSchema: {} }, asyn
 | 决策 | 结论 | 文档位置 |
 |------|------|----------|
 | 通信协议 | HTTP REST（主动操作）+ WebSocket（事件推送）双协议，同端口同期实现 | `docs/架构设计.md` § 6.3 |
-| WebSocket 兼容 | Unity 2022.3+：.NET 内置；Unity 2021.3：websocket-sharp（MIT）；条件编译隔离 | `docs/技术分析.md` § 2.1 |
+| WebSocket 兼容 | Unity 2022.3+：.NET 内置；Unity 2020.3 / 2021.x：websocket-sharp（MIT）；条件编译隔离 | `docs/技术分析.md` § 2.1 |
 | 非文本资产检索 | 关键字 + 目录约定 + 元数据过滤，不引入向量数据库 | `docs/技术分析.md` § 3.8 |
 | 服务器绑定 | 仅 `127.0.0.1`，不暴露外网 | `docs/技术分析.md` § 5 |
 | GameObject 标识 | 使用场景层级路径，不使用 InstanceID | `docs/技术分析.md` § 3.4 |
 | 资产路径限制 | 所有路径必须在 `Assets/` 目录下 | `docs/技术分析.md` § 5 |
-| Unity 兼容版本 | 2021.3 LTS 及以上 | `docs/设计文档.md` § 3 |
+| Unity 兼容版本 | 2020.3 LTS 及以上 | `docs/设计文档.md` § 3 |
 
 ---
 
@@ -127,7 +127,7 @@ server.tool("unity_get_hierarchy", { description: "...", inputSchema: {} }, asyn
 **功能已稳定，已剥离为独立发布包 `unity-editor-mcp/`，支持 Claude Code / Cursor / Claude Desktop / Continue。**
 
 进度详情：`docs/开发进度.md`
-插件路径：`unity-editor-mcp/unity-plugin/Editor/`（复制到 Unity 工程 Assets/ 或通过 UPM 安装）
+插件路径：`unity-editor-mcp/unity-mcp-plugin/Editor/`（复制到 Unity 工程 Assets/ 或通过 UPM 安装）
 
 ---
 

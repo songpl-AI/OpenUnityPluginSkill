@@ -11,7 +11,7 @@
 
 | 组件 | 最低版本 |
 |------|---------|
-| Unity Editor | 2021.3 LTS |
+| Unity Editor | 2020.3 LTS+ |
 | OpenClaw | 2026.x |
 | Node.js | 18+ |
 | npm | 8+ |
@@ -24,7 +24,7 @@
 
 **1.1 复制插件文件**
 
-将 `unity-editor-mcp/unity-plugin/Editor/` 整个文件夹复制到你的 Unity 工程的 `Assets/` 目录下：
+将 `unity-editor-mcp/unity-mcp-plugin/Editor/` 整个文件夹复制到你的 Unity 工程的 `Assets/` 目录下：
 
 ```
 Assets/
@@ -52,7 +52,7 @@ Assets/
 }
 ```
 
-> Unity 2021.3 需额外安装 websocket-sharp，见 [Unity 2021.3 补充说明](#unity-2021-3-补充说明)。
+> Unity 2020.3 / 2021.x 需额外安装 websocket-sharp，见 [Unity 2020.3 / 2021.x 补充说明](#unity-2020-3--2021x-补充说明)。
 
 **1.3 重新打开 Unity**
 
@@ -200,9 +200,9 @@ Agent 应调用 `unity_get_hierarchy` 并返回场景树。
 
 ---
 
-## Unity 2021.3 补充说明
+## Unity 2020.3 / 2021.x 补充说明
 
-Unity 2021.3 的内置 HTTP 不支持 WebSocket，需要额外安装 `websocket-sharp`：
+Unity 2020.3 和 2021.x 的内置 HTTP 不支持 WebSocket，需要额外安装 `websocket-sharp`：
 
 1. 下载 [websocket-sharp.dll](https://github.com/sta/websocket-sharp)（MIT License，~200KB）
 2. 放入 `Assets/OpenClawUnityPlugin/Plugins/` 目录
